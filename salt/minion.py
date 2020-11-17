@@ -1066,15 +1066,11 @@ class MinionManager(MinionBase):
             minion.handle_event(package)
 
     def _create_minion_object(
-        self, opts, timeout, safe, io_loop=None, loaded_base_name=None, jid_queue=None
+        self, opts, timeout, safe, io_loop=None, loaded_base_name=None, jid_queue=None, load_grains=True
     ):
         """
         Helper function to return the correct type of object
         """
-        load_grains = False
-        if opts.get("grains"):
-            # we have custom grains in config, we need to also load default grains
-            load_grains = True
         return Minion(
             opts,
             timeout,
@@ -1217,7 +1213,7 @@ class Minion(MinionBase):
         loaded_base_name=None,
         io_loop=None,
         jid_queue=None,
-        load_grains=False,
+        load_grains=True,
     ):  # pylint: disable=W0231
         """
         Pass in the options dict
@@ -1259,7 +1255,7 @@ class Minion(MinionBase):
         # before we can get the grains.  We do this for proxies in the
         # post_master_init
         if not salt.utils.platform.is_proxy():
-            if not self.opts.get("grains", {}) or load_grains:
+            if load_grains:
                 self.opts["grains"] = salt.loader.grains(opts)
         else:
             if self.opts.get("beacons_before_connect", False):
@@ -1762,7 +1758,7 @@ class Minion(MinionBase):
     @classmethod
     def _target(cls, minion_instance, opts, data, connected):
         if not minion_instance:
-            minion_instance = cls(opts)
+            minion_instance = cls(opts, load_grains=False)
             minion_instance.connected = connected
             if not hasattr(minion_instance, "functions"):
                 (
